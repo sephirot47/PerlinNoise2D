@@ -9,8 +9,8 @@ using namespace std;
 
 const int WindowWidth = 700, WindowHeight = 700;
 const int gridRowsMin = 10, gridColumnsMin = 10;
-const int gridRowsMax = 100, gridColumnsMax = 100;
-int gridStep = 3;
+const int gridRowsMax = 10, gridColumnsMax = 10;
+int gridStep = 10;
 
 
 float Lerp(float a0, float a1, float w) 
@@ -20,7 +20,7 @@ float Lerp(float a0, float a1, float w)
  
 float GetRand()
 {
-    return float(rand()%1000000) / 1000000;
+    return float(rand()%1000) / 1000;
 }
 
 glm::vec2 GetRandomNormalizedVector()
@@ -30,9 +30,9 @@ glm::vec2 GetRandomNormalizedVector()
 
 sf::Color Vec3ToColor(glm::vec3 color)
 {
-  unsigned char r = (unsigned char) glm::clamp(color.r * 255.0f, 0.0f, 255.0f);
-  unsigned char g = (unsigned char) glm::clamp(color.g * 255.0f, 0.0f, 255.0f);
-  unsigned char b = (unsigned char) glm::clamp(color.b * 255.0f, 0.0f, 255.0f);
+  unsigned char r = (unsigned char) glm::clamp(color.x * 255.0f, 0.0f, 255.0f);
+  unsigned char g = (unsigned char) glm::clamp(color.y * 255.0f, 0.0f, 255.0f);
+  unsigned char b = (unsigned char) glm::clamp(color.z * 255.0f, 0.0f, 255.0f);
   return sf::Color(r,g,b);
 }
 
@@ -49,6 +49,7 @@ int main(int argc, char **args)
   
   int gridRows = gridRowsMin;
   int gridColumns = gridColumnsMin;
+  int steps = 0;
   while(gridRows <= gridRowsMax && gridColumns <= gridColumnsMax)
   {
     vector<vector<glm::vec2>> grid(gridRows+1, vector<glm::vec2>(gridColumns+1));
@@ -60,51 +61,43 @@ int main(int argc, char **args)
         }
     }
     
-    int tileWidthPixels  = (int) ceil(float(WindowWidth)  / gridColumns);
-    int tileHeightPixels = (int) ceil(float(WindowHeight) / gridRows);
+    int tileWidthPixels  = WindowWidth  / gridColumns;
+    int tileHeightPixels = WindowHeight / gridRows;
     for(int x = 0; x < WindowWidth; ++x)
     {
         for(int y = 0; y < WindowHeight; ++y)
         {
-            int j = y/tileHeightPixels;
-            int i = x/tileWidthPixels;
-            glm::vec2 pixelCoordInsideGrid(x % tileWidthPixels, y % tileHeightPixels);
-            
             // [g0] | [g1]
             // -----------
             // [g2] | [g3]
-            glm::vec2 g0 = grid[i][j],   g1 = grid[i+1][j],
-                      g2 = grid[i][j+1], g3 = grid[i+1][j+1];
+            int i = y/tileHeightPixels;
+            int j = x/tileWidthPixels;
+            glm::vec2 g0 = grid[i][j],   g1 = grid[i][j+1],
+                      g2 = grid[i+1][j], g3 = grid[i+1][j+1];
             
-            glm::vec2 d0 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i),   tileHeightPixels*(j));
-            glm::vec2 d1 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i+1), tileHeightPixels*(j));
-            glm::vec2 d2 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i),   tileHeightPixels*(j+1));
-            glm::vec2 d3 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i+1), tileHeightPixels*(j+1));
+            glm::vec2 d0 = glm::vec2(x,y) - glm::vec2(tileHeightPixels * (i),   tileWidthPixels * (j)  ) + glm::vec2(0.000001);
+            glm::vec2 d1 = glm::vec2(x,y) - glm::vec2(tileHeightPixels * (i),   tileWidthPixels * (j+1)) + glm::vec2(0.000001);
+            glm::vec2 d2 = glm::vec2(x,y) - glm::vec2(tileHeightPixels * (i+1), tileWidthPixels * (j)  ) + glm::vec2(0.000001);
+            glm::vec2 d3 = glm::vec2(x,y) - glm::vec2(tileHeightPixels * (i+1), tileWidthPixels * (j+1)) + glm::vec2(0.000001);
             
-            d0.x /= WindowWidth; d0.y /= WindowHeight;
-            d1.x /= WindowWidth; d1.y /= WindowHeight;
-            d2.x /= WindowWidth; d2.y /= WindowHeight;
-            d3.x /= WindowWidth; d3.y /= WindowHeight;
+            float dot0 = glm::dot((d0), g0), dot1 = glm::dot((d1), g1),
+                  dot2 = glm::dot((d2), g2), dot3 = glm::dot((d3), g3);
             
-            float dot0 = glm::dot(g0, (d0)), dot1 = glm::dot(g1, (d1)),
-                  dot2 = glm::dot(g2, (d2)), dot3 = glm::dot(g3, (d3));
-            
+            glm::vec2 pixelCoordInsideGrid(x % tileWidthPixels, y % tileHeightPixels);
             float u = float(pixelCoordInsideGrid.x) / (tileWidthPixels);
             float v = float(pixelCoordInsideGrid.y) / (tileHeightPixels);
             float x0 = Lerp(dot0, dot1, u);
             float x1 = Lerp(dot2, dot3, u);
             float pixelValue = Lerp(x0, x1, v);
             
-            //cout << i << ", " << j << endl;
-            //sf::Color color = Vec3ToColor(glm::vec3(u, v, 0.0));
-            pixelValue = pixelValue + 0.5f;
-            //cout << pixelValue << endl;
-            glm::vec3 c = glm::vec3(1.0f, 0.0f, 0.0f) * (pixelValue);
+            glm::vec3 c = glm::vec3(1.0f, 1.0f, 1.0f) * (pixelValue * pixelValue);
             imageAccum[x][y] += c;
         }
     }
+    
     gridRows += gridStep, 
     gridColumns += gridStep;
+    ++steps;
   }
   
             
@@ -112,7 +105,7 @@ int main(int argc, char **args)
   {
     for(int y = 0; y < WindowHeight; ++y)
     {
-        imageAccum[x][y] /= ((gridRowsMax - gridRowsMin) / gridStep);
+        imageAccum[x][y] /= steps;
         sf::Color color = Vec3ToColor(imageAccum[x][y]);
         image.setPixel(x, y, color);
     }
