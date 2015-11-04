@@ -7,7 +7,7 @@
 
 using namespace std;
 
-const int WindowWidth = 600, WindowHeight = 600;
+const int WindowWidth = 700, WindowHeight = 700;
 const int gridRowsMin = 10, gridColumnsMin = 10;
 const int gridRowsMax = 100, gridColumnsMax = 100;
 int gridStep = 3;
@@ -20,7 +20,7 @@ float Lerp(float a0, float a1, float w)
  
 float GetRand()
 {
-    return float(rand()%10000) / 10000;
+    return float(rand()%1000000) / 1000000;
 }
 
 glm::vec2 GetRandomNormalizedVector()
@@ -42,7 +42,6 @@ int main(int argc, char **args)
   
   sf::RenderWindow window(sf::VideoMode(WindowWidth, WindowHeight), "Perlin Noise", sf::Style::Titlebar | sf::Style::Close);
   
-    
   sf::Image image;
   image.create(WindowWidth, WindowHeight);
     
@@ -61,21 +60,21 @@ int main(int argc, char **args)
         }
     }
     
-    int tileWidthPixels  = (WindowWidth  / gridColumns);
-    int tileHeightPixels = (WindowHeight / gridRows);
+    int tileWidthPixels  = (int) ceil(float(WindowWidth)  / gridColumns);
+    int tileHeightPixels = (int) ceil(float(WindowHeight) / gridRows);
     for(int x = 0; x < WindowWidth; ++x)
     {
         for(int y = 0; y < WindowHeight; ++y)
         {
-            int i = x/tileWidthPixels;
             int j = y/tileHeightPixels;
+            int i = x/tileWidthPixels;
             glm::vec2 pixelCoordInsideGrid(x % tileWidthPixels, y % tileHeightPixels);
             
             // [g0] | [g1]
             // -----------
             // [g2] | [g3]
             glm::vec2 g0 = grid[i][j],   g1 = grid[i+1][j],
-                    g2 = grid[i][j+1], g3 = grid[i+1][j+1];
+                      g2 = grid[i][j+1], g3 = grid[i+1][j+1];
             
             glm::vec2 d0 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i),   tileHeightPixels*(j));
             glm::vec2 d1 = glm::vec2(x,y) - glm::vec2(tileWidthPixels*(i+1), tileHeightPixels*(j));
@@ -88,7 +87,7 @@ int main(int argc, char **args)
             d3.x /= WindowWidth; d3.y /= WindowHeight;
             
             float dot0 = glm::dot(g0, (d0)), dot1 = glm::dot(g1, (d1)),
-                dot2 = glm::dot(g2, (d2)), dot3 = glm::dot(g3, (d3));
+                  dot2 = glm::dot(g2, (d2)), dot3 = glm::dot(g3, (d3));
             
             float u = float(pixelCoordInsideGrid.x) / (tileWidthPixels);
             float v = float(pixelCoordInsideGrid.y) / (tileHeightPixels);
@@ -98,8 +97,9 @@ int main(int argc, char **args)
             
             //cout << i << ", " << j << endl;
             //sf::Color color = Vec3ToColor(glm::vec3(u, v, 0.0));
+            pixelValue = pixelValue + 0.5f;
             //cout << pixelValue << endl;
-            glm::vec3 c = glm::vec3(1.0f, 0.0f, 0.0f) * (1.0f + pixelValue);
+            glm::vec3 c = glm::vec3(1.0f, 0.0f, 0.0f) * (pixelValue);
             imageAccum[x][y] += c;
         }
     }
